@@ -15,7 +15,7 @@ DEVICE = torch.device("cpu")
 
 class kernel(ABC):
     def __init__(self) -> None:
-        """
+        """ 
         Parent class for kernels
         """
         pass
