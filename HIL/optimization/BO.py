@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 # utils
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
     
 
@@ -34,15 +34,17 @@ class BayesianOptimization(object):
     """
     def __init__(self, n_parms:int = 1, range: np.ndarray = np.array([0,1]), noise_range :np.ndarray = np.array([0.005, 10]), acq: str = "ei",
         Kernel: str = "SE", model_save_path : str = "", device : str = "cpu" , plot: bool = False) -> None:
-        """Main Bayesian Optimization class
+        """Bayesian optimization for HIL
 
         Args:
-            n_parms (int, optional): Number of parameters to be optimized. Defaults to 1.
-            range (np.ndarray, optional): (lower and upper) In shape (2xn_parms). Defaults to np.array([0,1]).
-            noise_range (np.ndarray, optional): (lower and upper) In shape (2xn_parms). Defaults to np.array([0.005,10]).
-            Kernel (str, optional): string to choose from SE or Matern. Defaults to "SE".
-            model_save_path (str, optional): Path to save the file, defaults to data folder. Defaults to "".
-            device (str, optional): pytorch device. Defaults to "cpu".
+            n_parms (int, optional): Number of optimization parameters ( exoskeleton parameters). Defaults to 1.
+            range (np.ndarray, optional): Range of the optimization parameters. Defaults to np.array([0,1]).
+            noise_range (np.ndarray, optional): Range of noise contraints for optimization. Defaults to np.array([0.005, 10]).
+            acq (str, optional): Selecting acquisition function, options are 'ei', 'pi'. Defaults to "ei".
+            Kernel (str, optional): Selecting kernel for the GP, options are "SE", "Matern". Defaults to "SE".
+            model_save_path (str, optional): Path the new optimization saving directory. Defaults to "".
+            device (str, optional): which device to perform optimization, "gpu", "cuda" or "cpu". Defaults to "cpu".
+            plot (bool, optional): options to plot the gp and acquisition points. Defaults to False.
         """
         if Kernel == "SE":
             self.kernel = SE()
@@ -96,7 +98,7 @@ class BayesianOptimization(object):
             np.ndarray: Next parameter to sampled
         """
 
-        parameter = self._fit()
+        parameter, value = self._fit()
         new_parameter = parameter.detach().cpu().numpy()
 
         self.logger.info(f"Next parameter is {new_parameter}")
@@ -108,13 +110,17 @@ class BayesianOptimization(object):
 
         return new_parameter
 
-    def _fit(self) -> torch.tensor:
+    def _fit(self) -> Tuple[torch.tensor, torch.tensor]:
+        """Using the model and likelihood select the next data point to get next data points and acq value at that point
+
+        Returns:
+            Tuple[torch.tensor, torch.tensor]: next parmaeter, value at the point
+        """
         mll = ExactMarginalLogLikelihood(self.likelihood, self.model)
         fit_gpytorch_model(mll) # check I need to change anything
 
         if self.acq_type == "ei":
             acq = qNoisyExpectedImprovement(self.model, self.x, sampler=IIDNormalSampler(self.N_POINTS, seed = 1234))
-
         else:
             # TODO add other acquisition functions
             # identify the best x 
@@ -128,10 +134,10 @@ class BayesianOptimization(object):
             raw_samples=2000,
             options={},
         )
-        return new_point
+        return new_point, value
 
+    # Temp function will be replaced is some way
     def _plot(self):
-        #f , ax = plt.subplots(1,1,figsize=(4,3))
         plt.cla()
         x = self.x.detach().numpy()
         y = self.y.detach().numpy()
@@ -154,8 +160,9 @@ class BayesianOptimization(object):
         plt.pause(0.01)
 
     def _save_model(self) -> None:
+        """Save the model and data in the given path
+        """
         save_iter_path = self.model_save_path + f'iter_{len(self.x)}'
-        # if not os.path.exists(save_iter_path):
         os.makedirs(save_iter_path, exist_ok=True)
         model_path = save_iter_path +'/model.pth'
         torch.save(self.model.state_dict(), model_path)
