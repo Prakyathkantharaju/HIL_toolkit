@@ -1,11 +1,17 @@
 import math
 import os
+from telnetlib import GA
+from tkinter import E
+from tokenize import Single
+from pandas import Interval
 import torch
-import botorch.models import SingleTaskGP, FixedNoiseGP
+from botorch.models import SingleTaskGP, FixedNoiseGP
 from botorch.fit import fit_gpytorch_model
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from botorch.acquisition import ExpectedImprovement, qExpectedImprovement, qNoisyExpectedImprovement
+from botorch.acquisition.analytic import ProbabilityOfImprovement
 from gpytorch.likelihoods import GaussianLikelihood
+from botorch.sampling import IIDNormalSampler
 
 #TODO install the application to have realteive imports
 # local imports
@@ -26,13 +32,14 @@ class BayesianOptimization(object):
     """
     Bayesian Optimization class for HIL
     """
-    def __init__(self, n_parms:int = 1, range: np.ndarray = np.array([0,1]), 
+    def __init__(self, n_parms:int = 1, range: np.ndarray = np.array([0,1]), noise_range :np.ndarray = np.array([0.005, 10]), acq: str = "ei",
         Kernel: str = "SE", model_save_path : str = "", device : str = "cpu" , plot: bool = False) -> None:
         """Main Bayesian Optimization class
 
         Args:
             n_parms (int, optional): Number of parameters to be optimized. Defaults to 1.
             range (np.ndarray, optional): (lower and upper) In shape (2xn_parms). Defaults to np.array([0,1]).
+            noise_range (np.ndarray, optional): (lower and upper) In shape (2xn_parms). Defaults to np.array([0.005,10]).
             Kernel (str, optional): string to choose from SE or Matern. Defaults to "SE".
             model_save_path (str, optional): Path to save the file, defaults to data folder. Defaults to "".
             device (str, optional): pytorch device. Defaults to "cpu".
@@ -54,7 +61,7 @@ class BayesianOptimization(object):
             # this is temp
             self.model_save_path = "data/"
 
-        self.likelihood = GaussianLikelihood()
+        
 
         # place holder for model
         self.model = None
@@ -71,6 +78,18 @@ class BayesianOptimization(object):
 
         # logging
         self.logger = logging.getLogger()
+
+        # Noise constraints
+        self._noise_constraints = noise_range 
+        self.likelihood = GaussianLikelihood(Interval(self._noise_constraints[0], self._noise_constraints[1]))
+
+        # number of sampling in the acquisition points
+        self.N_POINTS = 200
+
+        # acquisition function type
+        self.acq_type = acq
+
+        
 
 
     def _step(self) -> np.ndarray:
@@ -91,7 +110,20 @@ class BayesianOptimization(object):
 
     #TODO Fill out and test the BO optimization 
     def _fit(self) -> torch.tensor:
-        pass
+        mll = ExactMarginalLogLikelihood(self.likelihood, self.model)
+        fit_gpytorch_model(mll) # check I need to change anything
+
+        if self.acq_type == "ei":
+            ei = qNoisyExpectedImprovement(self.model, self.x, sampler=IIDNormalSampler(self.N_POINTS, see = 1234))
+
+        else:
+            # TODO add other acquisition functions
+            # identify the best x 
+            pi = ProbabilityOfImprovement(self.model, self.xc, sampler=IIDNormalSampler(self.N_POINTS, see = 1234))
+            pass
+        new_point, value 
+
+        
 
     def _save_model(self) -> None:
         pass
@@ -110,5 +142,25 @@ class BayesianOptimization(object):
         Returns:
             np.ndarray: parameter to sample next
         """
-        pass
+
+        # TODO check the dimension of the input variables.
+
+        self.x = torch.tensor(x).to(self.device)
+        self.y = torch.tensor(y).to(self.device)
+
+        if not reload_hyper:
+            self.kernel.reset()
+            self.likelihood = GaussianLikelihood(noise_constraint = Interval(self._noise_constraints[0], self._noise_constraints[1]))
+            self.model = SingleTaskGP(self.x, self.y, likelihood = self.likelihood, covar_module = self.kernel.get_covr_module()) # TODO check if this ok for multi dimension models
+            self.model.to(self.device)
+
+        else:
+            # keeping the likehood save and kernel parameters so no need to reset those
+            self.model = SingleTaskGP(self.x, self.y, likelihood = self.likelihood, covar_module = self.kernel.get_covr_module())
+            self.model.to(self.device)
+
+        # fi the model and get the next parameter.
+        new_parameter = self._step()
+        
+
 
