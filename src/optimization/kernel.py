@@ -36,14 +36,19 @@ class SE(kernel):
         """
         super().__init__()
         self.length_scale_constraints = Interval(length_scale[0], length_scale[1]) #type: ignore
-        self.variance_constraints = Interval(variance_constraints[0], variance_constraints[1]) #type: ignore
-        self.covar_module = ScaleKernel(RBFKernel(lengthscale_constraint= self.length_scale_constraints) + LinearKernel())
+        self.output_constraints = Interval(variance_constraints[0], variance_constraints[1]) #type: ignore
+        self.covar_module = ScaleKernel(RBFKernel(lengthscale_constraint= self.length_scale_constraints), outputscale_constraint=self.output_constraints)
 
     def get_covr_module(self) -> Any:
         """
         returns the covar_module
         """
         return self.covar_module
+
+    def reset(self) -> None:
+        self.covar_module = ScaleKernel(RBFKernel(lengthscale_constraint= self.length_scale_constraints), outputscale_constraint=self.output_constraints)
+
+        
     
 
 class Matern(kernel):
@@ -59,7 +64,7 @@ class Matern(kernel):
         super().__init__()
         self.length_scale_constraints = Interval(length_scale[0], length_scale[1]) #type: ignore
         self.variance_constraints = Interval(variance_constraints[0], variance_constraints[1]) #type: ignore
-        self.covar_module = ScaleKernel(RBFKernel(lengthscale_constraint= self.length_scale_constraints) + LinearKernel())
+        self.covar_module = ScaleKernel(RBFKernel(lengthscale_constraint= self.length_scale_constraints), outputscale_constraint=self.variance_constraints)
 
     def get_covr_module(self) -> Any:
         """
@@ -67,3 +72,7 @@ class Matern(kernel):
         """
         return self.covar_module
 
+    def reset(self) -> None:
+        # self.length_scale_constraints = Interval(length_scale[0], length_scale[1]) #type: ignore
+        # self.variance_constraints = Interval(variance_constraints[0], variance_constraints[1]) #type: ignore
+        self.covar_module = ScaleKernel(RBFKernel())

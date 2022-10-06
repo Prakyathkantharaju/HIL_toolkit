@@ -1,9 +1,5 @@
 import math
 import os
-from telnetlib import GA
-from tkinter import E
-from tokenize import Single
-from pandas import Interval
 import torch
 from botorch.models import SingleTaskGP, FixedNoiseGP
 from botorch.fit import fit_gpytorch_model
@@ -11,13 +7,16 @@ from gpytorch.mlls import ExactMarginalLogLikelihood
 from botorch.acquisition import ExpectedImprovement, qExpectedImprovement, qNoisyExpectedImprovement
 from botorch.acquisition.analytic import ProbabilityOfImprovement
 from gpytorch.likelihoods import GaussianLikelihood
+from gpytorch.constraints import GreaterThan, Interval
 from botorch.sampling import IIDNormalSampler
+from botorch.optim import optimize_acqf
 
 #TODO install the application to have realteive imports
 # local imports
-from src.optimization.kernel import SE, Matern 
+from kernel import SE, Matern 
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 # utils
 import logging
@@ -25,7 +24,8 @@ from typing import Any, Optional
 
     
 
-
+import warnings
+warnings.filterwarnings("ignore")
 
 
 class BayesianOptimization(object):
@@ -46,20 +46,20 @@ class BayesianOptimization(object):
         """
         if Kernel == "SE":
             self.kernel = SE()
-            self.covar_module = self.kernel.get_covar_module()
+            self.covar_module = self.kernel.get_covr_module()
 
         else:
             self.kernel = Matern()
-            self.covar_module = self.kernel.get_covar_module()
+            self.covar_module = self.kernel.get_covr_module()
         
         self.n_parms = n_parms
-        self.range = range 
+        self.range = range.reshape(self.n_parms * 2,1).astype(float)
         
         if len(model_save_path):
             self.model_save_path = model_save_path
         else:
             # this is temp
-            self.model_save_path = "data/"
+            self.model_save_path = "tmp_data/"
 
         
 
@@ -74,23 +74,20 @@ class BayesianOptimization(object):
         self.device = device
 
         # plotting
-        self.plot - plot
+        self.PLOT = plot
 
         # logging
         self.logger = logging.getLogger()
 
         # Noise constraints
         self._noise_constraints = noise_range 
-        self.likelihood = GaussianLikelihood(Interval(self._noise_constraints[0], self._noise_constraints[1]))
+        self.likelihood = GaussianLikelihood() #noise_constraint=Interval(self._noise_constraints[0], self._noise_constraints[1]))
 
         # number of sampling in the acquisition points
         self.N_POINTS = 200
 
         # acquisition function type
         self.acq_type = acq
-
-        
-
 
     def _step(self) -> np.ndarray:
         """ Fit the model and identify the next parameter, also plots the model if plot is true
@@ -106,32 +103,70 @@ class BayesianOptimization(object):
 
         self._save_model()
 
+        if self.PLOT:
+            self._plot()
+
         return new_parameter
 
-    #TODO Fill out and test the BO optimization 
     def _fit(self) -> torch.tensor:
         mll = ExactMarginalLogLikelihood(self.likelihood, self.model)
         fit_gpytorch_model(mll) # check I need to change anything
 
         if self.acq_type == "ei":
-            ei = qNoisyExpectedImprovement(self.model, self.x, sampler=IIDNormalSampler(self.N_POINTS, see = 1234))
+            acq = qNoisyExpectedImprovement(self.model, self.x, sampler=IIDNormalSampler(self.N_POINTS, seed = 1234))
 
         else:
             # TODO add other acquisition functions
             # identify the best x 
-            pi = ProbabilityOfImprovement(self.model, self.xc, sampler=IIDNormalSampler(self.N_POINTS, see = 1234))
+            acq = ProbabilityOfImprovement(self.model, self.xc, sampler=IIDNormalSampler(self.N_POINTS, seed = 1234))
             pass
-        new_point, value 
+        new_point, value  = optimize_acqf(
+            acq_function = acq,
+            bounds=torch.tensor(self.range).to(self.device),
+            q = 1,
+            num_restarts=1000,
+            raw_samples=2000,
+            options={},
+        )
+        return new_point
 
-        
+    def _plot(self):
+        #f , ax = plt.subplots(1,1,figsize=(4,3))
+        plt.cla()
+        x = self.x.detach().numpy()
+        y = self.y.detach().numpy()
+        plt.plot(x, y, 'r.', ms = 10)
+        x_torch = torch.tensor(x).to(self.device)
+        y_torch = torch.tensor(y).to(self.device)
+        self.model.eval()
+        self.likelihood.eval()
+        with torch.no_grad():
+            x_length = np.linspace(self.range[0,0],self.range[1,0],100).reshape(-1, 1)
+            # print(x_length,self.range)
+            observed = self.likelihood(self.model(torch.tensor(x_length)))
+            observed_mean = observed.mean.cpu().numpy()
+            upper, lower = observed.confidence_region()
+            # x_length = x_length.cpu().numpy()
+            
+        plt.plot(x_length.flatten(), observed_mean)
+        plt.fill_between(x_length.flatten(), lower.cpu().numpy(), upper.cpu().numpy(), alpha=0.2)
+        plt.legend(['Observed Data', 'mean', 'Confidence'])
+        plt.pause(0.01)
 
     def _save_model(self) -> None:
-        pass
+        save_iter_path = self.model_save_path + f'iter_{len(self.x)}'
+        # if not os.path.exists(save_iter_path):
+        os.makedirs(save_iter_path, exist_ok=True)
+        model_path = save_iter_path +'/model.pth'
+        torch.save(self.model.state_dict(), model_path)
+        data_save = save_iter_path + '/data.csv'
+        x = self.x.detach().cpu().numpy()
+        y = self.y.detach().cpu().numpy()
+        full_data = np.hstack((x,y))
+        np.savetxt(data_save, full_data)
+        self.logger.info(f"model saved successfully at {save_iter_path}")
 
-    def _plot(self) -> None:
-        pass
-
-    def run(self, x: np.ndarray, y: np.ndarray, reload_hyper: bool  = True ) -> np.ndarray:
+    def run(self, x: np.ndarray, y: np.ndarray, reload_hyper: bool  = False ) -> np.ndarray:
         """Run the optimization with input data points
 
         Args:
@@ -162,5 +197,63 @@ class BayesianOptimization(object):
         # fi the model and get the next parameter.
         new_parameter = self._step()
         
+        return new_parameter
+        
 
 
+if __name__ == "__main__":
+
+
+    def mapRange(value, inMin=0, inMax=1, outMin=0.2, outMax=1.2):
+        return outMin + (((value - inMin) / (inMax - inMin)) * (outMax - outMin))
+    # objective function
+    def objective(x, noise_std=0.0):
+        # define range for input
+        # r_min, r_max = 0, 1.2
+        x = mapRange(x/100)
+        return 	 -(1.4 - 3.0 * x) * np.sin(18.0 * x) + noise_std * np.random.random(len(x))
+    # BO = BayesianOptimization(range = np.array([-0.5 * np.pi, 2 * np.pi]))
+    BO = BayesianOptimization(range = np.array([0, 100]), plot=True)
+    x = np.random.random(3) * 100
+
+    y = objective(x)
+
+    x = x.reshape(-1,1)
+    y = y.reshape(-1, 1)
+    
+    full_x = np.linspace(0,100,100)
+    full_y = objective(full_x)
+
+    plt.plot(full_x, full_y)
+    plt.plot(x,y, 'r*')
+    plt.show()
+
+
+    new_parameter = BO.run(x, y)
+    # length_scale_store = []
+    # output_scale_store = []
+    # noise_scale_store = []
+    for i in range(15):
+        x = np.concatenate((x, new_parameter.reshape(1,1)))
+
+        y = np.concatenate((y,objective(new_parameter).reshape(1,1)))
+        new_parameter = BO.run(x,y)
+        plt.pause(2)
+    #     plt.show()
+    #     # length_scale_store.append(BO.model.covar_module.base_kernel.lengthscale.detach().numpy().flatten())
+    #     # output_scale_store.append(BO.model.covar_module.outputscale.detach().numpy().flatten())
+    #     # noise_scale_store.append(BO.likelihood.noise.detach().numpy().flatten()
+    #     # )
+    # # x = np.linspace(-0.5 * np.pi, 2 * np.pi, 100)
+    # x = np.linspace(0, 100, 100)
+    # print('here')
+    # plt.figure()
+    # y = (np.sin(x/100)**3 + np.cos(x/100)**3) * 100
+
+    # plt.plot(x,y,'r')
+    # plt.figure()
+    # plt.plot(length_scale_store, label='length scale')
+    # plt.plot(output_scale_store, label = "sigma")
+    # plt.plot(noise_scale_store, label="noise")
+    # plt.legend()
+    # plt.show()
