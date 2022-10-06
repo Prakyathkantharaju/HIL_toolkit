@@ -13,7 +13,7 @@ from botorch.optim import optimize_acqf
 
 #TODO install the application to have realteive imports
 # local imports
-from kernel import SE, Matern 
+from HIL.optimization.kernel import SE, Matern 
 
 import numpy as np
 import matplotlib.pyplot as plt
