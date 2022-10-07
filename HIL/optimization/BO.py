@@ -11,7 +11,6 @@ from gpytorch.constraints import GreaterThan, Interval
 from botorch.sampling import IIDNormalSampler
 from botorch.optim import optimize_acqf
 
-#TODO install the application to have realteive imports
 # local imports
 from HIL.optimization.kernel import SE, Matern 
 
@@ -20,7 +19,7 @@ import matplotlib.pyplot as plt
 
 # utils
 import logging
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, Dict
 
     
 
@@ -33,7 +32,7 @@ class BayesianOptimization(object):
     Bayesian Optimization class for HIL
     """
     def __init__(self, n_parms:int = 1, range: np.ndarray = np.array([0,1]), noise_range :np.ndarray = np.array([0.005, 10]), acq: str = "ei",
-        Kernel: str = "SE", model_save_path : str = "", device : str = "cpu" , plot: bool = False) -> None:
+        Kernel: str = "SE", model_save_path : str = "", device : str = "cpu" , plot: bool = False, kernel_parms: Dict = {}) -> None:
         """Bayesian optimization for HIL
 
         Args:
@@ -46,6 +45,7 @@ class BayesianOptimization(object):
             device (str, optional): which device to perform optimization, "gpu", "cuda" or "cpu". Defaults to "cpu".
             plot (bool, optional): options to plot the gp and acquisition points. Defaults to False.
         """
+        # TODO have an options of sending in the kernel parameters.
         if Kernel == "SE":
             self.kernel = SE()
             self.covar_module = self.kernel.get_covr_module()
@@ -185,7 +185,8 @@ class BayesianOptimization(object):
             np.ndarray: parameter to sample next
         """
 
-        # TODO check the dimension of the input variables.
+        
+        assert len(x) == len(y), "Length should be equal."
 
         self.x = torch.tensor(x).to(self.device)
         self.y = torch.tensor(y).to(self.device)
@@ -193,7 +194,8 @@ class BayesianOptimization(object):
         if not reload_hyper:
             self.kernel.reset()
             self.likelihood = GaussianLikelihood(noise_constraint = Interval(self._noise_constraints[0], self._noise_constraints[1]))
-            self.model = SingleTaskGP(self.x, self.y, likelihood = self.likelihood, covar_module = self.kernel.get_covr_module()) # TODO check if this ok for multi dimension models
+            self.model = SingleTaskGP(self.x, self.y, likelihood = self.likelihood, covar_module = self.kernel.get_covr_module()) 
+            # TODO check if this ok for multi dimension models
             self.model.to(self.device)
 
         else:
