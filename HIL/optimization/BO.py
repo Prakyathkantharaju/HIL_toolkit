@@ -137,7 +137,7 @@ class BayesianOptimization(object):
         return new_point, value
 
     # Temp function will be replaced is some way
-    def _plot(self):
+    def _plot(self) -> None:
         plt.cla()
         x = self.x.detach().numpy()
         y = self.y.detach().numpy()
