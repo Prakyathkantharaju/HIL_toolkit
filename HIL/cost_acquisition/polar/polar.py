@@ -51,6 +51,7 @@ class Polar(object):
 
         # time
         self.previous_time = 0
+        self.previous_time_ecg = 0
 
         # placeholder
         self.client = None
@@ -121,20 +122,18 @@ class Polar(object):
         ## For Plolar H10  sampling frequencies ##
         self.SAMPLING_FREQ = {'ECG': 130, 'ACC': 200}
 
-    async def main(self) -> None:
-        """Main data collection function, this function will run asyncronosly and connects client to run function
-        """
+    async def main(self):
         try:
             async with BleakClient(self.ADDRESS) as client:
                 signal.signal(signal.SIGINT, self._interrupt_handler)
                 tasks = [
-                    asyncio.ensure_feature(self._run(client)), #type: ignore
+                    asyncio.ensure_future(self._run(client)),
                 ]
 
                 await asyncio.gather(*tasks)
-        
         except:
             pass
+
 
     async def _run(self, client: BleakClient, debug:bool = False) -> None:
         """Async function with connect to the ble client and initiaing data collection module
@@ -145,7 +144,6 @@ class Polar(object):
         """
 
         ## Writing chracterstic description to control point for request of UUID (defined above) ##
-
         await client.is_connected() #type: ignore
         self.logger.info("--------- Polar Device connected--------------")
 
@@ -159,6 +157,9 @@ class Polar(object):
         self.logger.info("Battery Level: {0}%".format(int(battery_level[0])))
 
         att_read = await client.read_gatt_char(self.PMD_CONTROL)
+
+        print(f"connected")
+
 
         if self.ACC_FLAG:
             self.logger.info(f'started the acceleration connection')
@@ -176,6 +177,10 @@ class Polar(object):
 
             ## Collecting data for 1 second
             await asyncio.sleep(1)
+            # printing something for viewer confidence ;)
+            print(time.time() - self.previous_time)
+
+
 
 
     def _interrupt_handler(self, signum: Any, frame: Any) -> None:
@@ -186,13 +191,13 @@ class Polar(object):
             frame (Any): exit frame
         """
         if self.client is None:
-            self.logger.info("NO BLE client found closing the device")
-        
+            self.logger.info('no ble client found closing the device')
+            sys.exit()
         else:
-            self.logger.info("found ble client stopping")
-            # Close the connection
+            self.logger.info('found ble client stopping')
+            # close the connection properly
             self.client.disconnect()
-        sys.exit()
+            sys.exit()
 
 
     def _send_data(self, sender: Any, data: Any) -> None:
@@ -211,7 +216,7 @@ class Polar(object):
             step = 3
             samples = data[10:]
             offset, i = 0, 0 
-            time_diff = time.time() - self.previous_time
+            time_diff = time.time() - self.previous_time_ecg
             ECG_list = []
             while offset < len(samples):
                 i += 1
@@ -220,7 +225,7 @@ class Polar(object):
                 self.ECG_data['ecg'].extend([ecg])
                 self.ECG_data['time'].extend([timestamp])
                 ECG_list.append(ecg)
-            self.previous_time = time.time()
+            self.previous_time_ecg = time.time()
             self.ECG_stream.push_chunk(ECG_list, pylsl.local_clock() - time_diff)
 
         # ACC data

@@ -55,7 +55,7 @@ class BayesianOptimization(object):
             self.covar_module = self.kernel.get_covr_module()
         
         self.n_parms = n_parms
-        self.range = range.reshape(self.n_parms * 2,1).astype(float)
+        self.range = range.reshape(2,self.n_parms).astype(float)
         
         if len(model_save_path):
             self.model_save_path = model_save_path
@@ -110,7 +110,21 @@ class BayesianOptimization(object):
 
         return new_parameter
 
-    def _fit(self) -> Tuple[torch.tensor, torch.tensor]:
+    def _get_data_best(self) -> float:
+        """Get the best value predicted by the model
+
+        Returns:
+            float: best value
+        """
+        
+        range = np.arange(self.range[0,:], self.range[1,:], self.N_POINTS)
+        range = torch.tensor(range)
+        self.model.eval() #type: ignore
+        output = self.model(range)     #type: ignore
+        return torch.max(output).detach().numpy() #type: ignore
+
+
+    def _fit(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """Using the model and likelihood select the next data point to get next data points and acq value at that point
 
         Returns:
@@ -120,11 +134,11 @@ class BayesianOptimization(object):
         fit_gpytorch_model(mll) # check I need to change anything
 
         if self.acq_type == "ei":
-            acq = qNoisyExpectedImprovement(self.model, self.x, sampler=IIDNormalSampler(self.N_POINTS, seed = 1234))
+            acq = qNoisyExpectedImprovement(self.model, self.x, sampler=IIDNormalSampler(self.N_POINTS, seed = 1234)) #type: ignore
         else:
             # TODO add other acquisition functions
-            # identify the best x 
-            acq = ProbabilityOfImprovement(self.model, self.xc, sampler=IIDNormalSampler(self.N_POINTS, seed = 1234))
+            best_f = self._get_data_best()
+            acq = ProbabilityOfImprovement(self.model, best_f, sampler=IIDNormalSampler(self.N_POINTS, seed = 1234)) #type: ignore
             pass
         new_point, value  = optimize_acqf(
             acq_function = acq,
@@ -144,14 +158,14 @@ class BayesianOptimization(object):
         plt.plot(x, y, 'r.', ms = 10)
         x_torch = torch.tensor(x).to(self.device)
         y_torch = torch.tensor(y).to(self.device)
-        self.model.eval()
+        self.model.eval()  #type: ignore
         self.likelihood.eval()
         with torch.no_grad():
             x_length = np.linspace(self.range[0,0],self.range[1,0],100).reshape(-1, 1)
             # print(x_length,self.range)
-            observed = self.likelihood(self.model(torch.tensor(x_length)))
-            observed_mean = observed.mean.cpu().numpy()
-            upper, lower = observed.confidence_region()
+            observed = self.likelihood(self.model(torch.tensor(x_length))) #type: ignore
+            observed_mean = observed.mean.cpu().numpy() #type: ignore
+            upper, lower = observed.confidence_region() #type: ignore
             # x_length = x_length.cpu().numpy()
             
         plt.plot(x_length.flatten(), observed_mean)
@@ -165,7 +179,7 @@ class BayesianOptimization(object):
         save_iter_path = self.model_save_path + f'iter_{len(self.x)}'
         os.makedirs(save_iter_path, exist_ok=True)
         model_path = save_iter_path +'/model.pth'
-        torch.save(self.model.state_dict(), model_path)
+        torch.save(self.model.state_dict(), model_path) #type: ignore
         data_save = save_iter_path + '/data.csv'
         x = self.x.detach().cpu().numpy()
         y = self.y.detach().cpu().numpy()

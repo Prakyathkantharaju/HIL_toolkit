@@ -6,6 +6,7 @@ import pylsl
 import time
 import os
 import copy
+import abc
 
 # processing
 import neurokit2 as nk
@@ -22,6 +23,18 @@ class Inlet:
         self.name = info.name()
         self.channel_count = info.channel_count()
         self.new_data = False
+        self.store_data = np.array([])
+
+    @abc.abstractclassmethod
+    def get_data(self) -> None:
+        raise NotImplementedError
+
+    @abc.abstractclassmethod
+    def send_data(self) -> None:
+        raise NotImplementedError
+
+
+    
 
 class DataInlet(Inlet):
     dtypes = [[], np.float32, np.float64, None, np.int32, np.int16, np.int8, np.int64]
