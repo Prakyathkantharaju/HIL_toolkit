@@ -20,6 +20,14 @@ HIL.cost\_acquisition.polar.polar module
    :undoc-members:
    :show-inheritance:
 
+HIL.cost\_acquisition.polar.send\_polar module
+----------------------------------------------
+
+.. automodule:: HIL.cost_acquisition.polar.send_polar
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
