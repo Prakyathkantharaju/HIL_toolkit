@@ -128,7 +128,7 @@ class Polar(object):
             async with BleakClient(self.ADDRESS) as client:
                 signal.signal(signal.SIGINT, self._interrupt_handler)
                 tasks = [
-                    asyncio.ensure_feature(self._run(client)),
+                    asyncio.ensure_feature(self._run(client)), #type: ignore
                 ]
 
                 await asyncio.gather(*tasks)
@@ -146,7 +146,7 @@ class Polar(object):
 
         ## Writing chracterstic description to control point for request of UUID (defined above) ##
 
-        await client.is_connected()
+        await client.is_connected() #type: ignore
         self.logger.info("--------- Polar Device connected--------------")
 
         model_number = await client.read_gatt_char(self.MODEL_NBR_UUID)
@@ -186,14 +186,13 @@ class Polar(object):
             frame (Any): exit frame
         """
         if self.client is None:
-            self.logger.info("NO BLUE client found closing the device")
-            sys,exit()
+            self.logger.info("NO BLE client found closing the device")
         
         else:
             self.logger.info("found ble client stopping")
             # Close the connection
             self.client.disconnect()
-            sys.exit()
+        sys.exit()
 
 
     def _send_data(self, sender: Any, data: Any) -> None:

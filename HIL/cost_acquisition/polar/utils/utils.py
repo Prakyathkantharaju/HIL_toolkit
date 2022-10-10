@@ -14,7 +14,7 @@ def convert_to_unsigned_long(data: np.ndarray, offset: int, length: int) -> int:
 from  pylsl import StreamInfo, StreamOutlet
 
 def ECG_stream(name:str, sampling_frq:int = 130) -> StreamOutlet:
-    info = StreamInfo(name, 'ECG', 1, sampling_frq, 'float32', 'myuid2424')
+    info = StreamInfo(name, 'ECG', 1, sampling_frq, 'float32', 'myuid2424') #type: ignore
     info.desc().append_child_value("manufacturer", "Polar")
     channels = info.desc().append_child("channels")
     for c in ["ECG"]:
@@ -24,8 +24,8 @@ def ECG_stream(name:str, sampling_frq:int = 130) -> StreamOutlet:
             .append_child_value("type", "ECG")
     return StreamOutlet(info, 74)
 
-def ACC_stream(name:str, sampling_frq:int  = 200) -> StreamInfo:
-    info = StreamInfo(name, 'ACC', 3, sampling_frq, 'float32', 'myuid2425')
+def ACC_stream(name:str, sampling_frq:int  = 200) -> StreamOutlet:
+    info = StreamInfo(name, 'ACC', 3, sampling_frq, 'float32', 'myuid2425') #type: ignore
     info.desc().append_child_value("manufacturer", "Polar")
     channels = info.desc().append_child("channels")
     for c in ['X', 'Y', 'Z']:
