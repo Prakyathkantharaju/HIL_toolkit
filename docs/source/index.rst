@@ -6,9 +6,25 @@
 Welcome to HIL's documentation!
 ===============================
 
+
+HOME
+====
+
+
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
+   :caption: Menu
+   :titlesonly:
+
+   Introduction
+   Setup
+   Modules/optimization
+   Modules/cost-acquisition
+   Modules/cost-estimation
+   Modules/exo-communication
+
+
+
 
 
 
