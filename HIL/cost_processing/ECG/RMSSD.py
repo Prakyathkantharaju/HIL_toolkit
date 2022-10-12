@@ -39,7 +39,7 @@ class Inlet:
 class DataInlet(Inlet):
     dtypes = [[], np.float32, np.float64, None, np.int32, np.int16, np.int8, np.int64]
 
-    def __init__(self, info: pylsl.StreamInfo, data_length: int, sampling_rate: int = 133) -> None:
+    def __init__(self, info: pylsl.StreamInfo, data_length: int, sampling_rate: int = 133, skip_threshold: int = 40) -> None:
         super().__init__(info, data_length)
         buffer_size = (2 * math.ceil(info.nominal_srate() * data_length), info.channel_count())
         self.buffer = np.empty(buffer_size, dtype = self.dtypes[info.channel_format()])
@@ -47,11 +47,11 @@ class DataInlet(Inlet):
         self.store_data = np.array([])
         info  = pylsl.StreamInfo('ECG_processed',  'Marker', 1, 0, 'float32', 'myuidw43537') #type: ignore
         self.outlet = pylsl.StreamOutlet(info)
-        self._logger = logging.Logger(__name__)
+        self._logger = logging.getLogger()
         # self.communication = MainCommunication()
         # setting some large RMMSD value at the start.
         self.previous_HR = 1000
-        self.skip_threshold = 40
+        self.skip_threshold = skip_threshold
         self.skip_counter = 0
         self.cleaned = None
         self.SAMPLING_RATE = sampling_rate
@@ -125,27 +125,31 @@ class DataInlet(Inlet):
         self._logger.info(f"Sending the RMSSD value {rmssd}")
 
     
-class SetupStreams():
-    def __init__(self):
+class RMSSD():
+    def __init__(self, config: dict):
         self.inlets: List[Inlet] = []
         self.streams = pylsl.resolve_streams()
+        self.wait_time = config['Pub_rate']
 
         for info in self.streams:
             print(info.name())
-            if info.name() == 'polar ECG':
-                self.inlets.append(DataInlet(info, 1000))
+            if info.name() == config['stream_name']:
+                self.inlets.append(DataInlet(info, config['Data_buffer_length'], 
+                        sampling_rate=config['Sampling_rate'], skip_threshold=config['Skip_threshold']))
 
     def run(self):
-        for inlet in self.inlets:
-            inlet.get_data()
-            # Checking the inlet data size and send the data to the pylsl stream.
-            if len(inlet.store_data) > 250:
-                inlet.send_data()
-            else:
-                logging.warn(f"{__name__}: no data to send")
 
-            # return success
-            return 1
+        # This is the main while loop
+        while True:
+            time.sleep(self.wait_time)
+            for inlet in self.inlets:
+                inlet.get_data()
+                # Checking the inlet data size and send the data to the pylsl stream.
+                if len(inlet.store_data) > 250:
+                    inlet.send_data()
+                else:
+                    logging.warn(f"{__name__}: no data to send")
+
 
 
 
