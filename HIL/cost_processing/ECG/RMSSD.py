@@ -84,6 +84,7 @@ class DataInlet(Inlet):
             except ValueError:
                 self.quality = 0
             
+# TODO make a seperate class for RMSSD processing.
 
     def _process_data(self) -> float:
         if self.cleaned is None:
