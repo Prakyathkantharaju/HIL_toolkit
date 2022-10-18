@@ -1,9 +1,8 @@
 RMSSD_config:
-  - Stream_name : "polar ECG"
-  - Skip_threshold : 40
-  - Data_buffer_length: 1000
-  - Sampling_rate: 133
-  - Pub_rate: 1
-
+  Stream_name : "polar ECG"
+  Skip_threshold : 40
+  Data_buffer_length: 1000
+  Sampling_rate: 133
+  Pubrate: 1
   # stream output information ( may be used in cost)
-  - Output_stream_name: 'RMSSD'
+  Output_stream_name: 'RMSSD'

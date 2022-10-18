@@ -17,7 +17,7 @@ from typing import List
 from HIL.cost_processing.utils.inlet import InletOutlet
 
 
-    
+import matplotlib.pyplot as plt
 
 class RMSSDInOut(InletOutlet):
     dtypes = [[], np.float32, np.float64, None, np.int32, np.int16, np.int8, np.int64]
@@ -55,6 +55,7 @@ class RMSSDInOut(InletOutlet):
 
         # flags
         self.first_data = True
+        self.cleaned = np.array([])
 
 
     def get_data(self) -> None:
@@ -78,12 +79,12 @@ class RMSSDInOut(InletOutlet):
             self.first_data = False
 
         else:
-            self.store_data = np.append(self.store_data.flatten(), self.buffer)
+            self.store_data = np.append(self.store_data.flatten(), self.buffer[0:ts.size].flatten())
             self.rmssd.add_data(self.store_data)
             
 
             # check if there is a nan in the data
-            if np.isnan(self.cleaned).any(): #type: ignore
+            if np.isnan(self.store_data).any(): #type: ignore
                 self._logger.warn(f"nan found in data")
 
     def send_data(self) -> None:
@@ -95,9 +96,9 @@ class RMSSDInOut(InletOutlet):
         if self.previous_HR == 1000: # this is the first
             self.previous_HR = rmssd
 
-        if len(self.cleaned) < 2000: #type: ignore
-            self._logger.info(f"Not enough clean data {len(self.cleaned)}") #type: ignore
-            return
+        # if len(self.cleaned) < 2000: #type: ignore
+        #     self._logger.info(f"Not enough clean data {len(self.cleaned)}") #type: ignore
+        #     return
 
         if rmssd == -1:
             # something wrong with the data do not send
@@ -138,7 +139,7 @@ class RMSSD():
 
         """Clean the data and perform a quality check
         """
-        self.cleaned = nk.ecg_clean(self.raw_data, sampling_rate=self.SAMPLING_RATE)
+        self.cleaned = nk.ecg_clean(self.raw_data[-1000:], sampling_rate=self.SAMPLING_RATE)
 
         try:
             self.quality = nk.ecg_quality(self.cleaned, method = 'zhao', sampling_rate=self.SAMPLING_RATE)
@@ -154,15 +155,15 @@ class RMSSD():
         if self.cleaned is None:
             return -1
         
+        self._clean_quality()
         cleaned = copy.copy(self.cleaned)
 
         peaks, info = nk.ecg_peaks(cleaned, sampling_rate = self.SAMPLING_RATE)
 
         try:
             signal = nk.hrv_time(peaks, sampling_rate=self.SAMPLING_RATE, show = False)
-
             # setting the new data
-            return signal['HRV_RMSSD'].value[0]
+            return signal['HRV_RMSSD'].iloc[0]
         except IndexError:
             return -1
 
@@ -178,13 +179,15 @@ class RMSSDFromStream():
         Args:
             config (dict): Configs parsed output of the yaml config files
         """
+        config = config['RMSSD_config']
         self.inlets: List[InletOutlet] = []
         self.streams = pylsl.resolve_streams()
-        self.wait_time = config['Pub_rate']
+        self.wait_time = config['Pubrate']
 
         for info in self.streams:
-            print(info.name())
-            if info.name() == config['stream_name']:
+            print(info.name(), info.name() == config['Stream_name'])
+            if info.name() == config['Stream_name']:
+                print("#" * 50)
                 self.inlets.append(RMSSDInOut(info, config['Data_buffer_length'], 
                         sampling_rate=config['Sampling_rate'], skip_threshold=config['Skip_threshold']))
 
