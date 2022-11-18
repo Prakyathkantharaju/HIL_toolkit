@@ -14,4 +14,7 @@ Optimization:
   model_save_path: "models/"
   device: "cuda" # device to use
   n_start_points: 3 # number of start points
+  acquisition: 'qei'
+  kernel_function: 'se'
+  GP: "Regular"
 

@@ -6,21 +6,7 @@ import yaml
 
 from HIL.cost_acquisition.polar.polar import Polar
 
-# def run(address):
-    # start_polar(address)
 
-
-
-# def start_polar(polar_address):
-#     """
-#     Start the Polar data collection.
-#     """
-#     # start the Polar data collection
-#     polar_inst = Polar(polar_address)
-#     os.environ["PYTHONASYNCIODEBUG"] = str(1)
-#     loop = asyncio.new_event_loop()
-#     asyncio.set_event_loop(loop)
-#     loop.run_until_complete(polar_inst.main())
 
 def start_polar(address):
     """

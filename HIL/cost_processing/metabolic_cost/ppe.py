@@ -67,7 +67,7 @@ class PPE(object):
         self._phase_plane = phase_plane
 
         # estimte the prediction with mean and std of the prediction
-        mean, cov = self._estimate_steady_state(phase_plane)
+        mean, cov = self._estimate_steady_state(phase_plane) #ignore 
 
         assert len(mean) == 1, "mean is not one, check gmm prediction"
         assert len(cov) == 1, "mean is not one, check gmm prediction"
