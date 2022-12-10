@@ -74,7 +74,7 @@ class PPE(object):
         assert self._covariances is not None, "covariances is not calculated yet"
         return self._covariances
 
-    def estimate(self, raw_met: np.ndarray, raw_time: np.ndarray) -> Tuple[float, float]:
+    def estimate(self, raw_met: np.ndarray, raw_time: np.ndarray, estimate: bool = True) -> Tuple[float, float]:
         # slightly differnt from the paper, performs better
         # Upsample data
         up_sampled = self._up_sample(raw_met, raw_time)
@@ -87,6 +87,9 @@ class PPE(object):
 
         # updated phase plane
         self._phase_plane = phase_plane
+
+        if not estimate:
+            return 0,0
 
         # estimte the prediction with mean and std of the prediction
         mean, cov = self._estimate_steady_state(phase_plane) #ignore 

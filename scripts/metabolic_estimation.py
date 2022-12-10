@@ -11,26 +11,29 @@ import itertools
 # HIL toolbox import
 from HIL.cost_processing.metabolic_cost.ppe import PPE
 
+# HIL plotting utils
+from HIL.plotting.utils import plot_elipses, plot_mean_estimation
+
 # plotting ellipses
-from gmr import plot_error_ellipse
+# from gmr import plot_error_ellipse
 
-def plot_elipses(means, covariances, ax):
-    color_iter = itertools.cycle(["navy", "c", "cornflowerblue", "gold", "darkorange"])
-    for i, (mean, covar, color) in enumerate(zip(means, covariances, color_iter)):
-        v, w = linalg.eigh(covar) #type:ignore
-        v = 2.0 * np.sqrt(2.0) * np.sqrt(v)
-        u = w[0] / linalg.norm(w[0]) #type:ignore
+# def plot_elipses(means, covariances, ax):
+#     color_iter = itertools.cycle(["navy", "c", "cornflowerblue", "gold", "darkorange"])
+#     for i, (mean, covar, color) in enumerate(zip(means, covariances, color_iter)):
+#         v, w = linalg.eigh(covar) #type:ignore
+#         v = 2.0 * np.sqrt(2.0) * np.sqrt(v)
+#         u = w[0] / linalg.norm(w[0]) #type:ignore
 
-        angle = np.arctan(u[1] / u[0])
-        angle = 180.0 * angle / np.pi  # convert to degrees
-        ell = mpl.patches.Ellipse(mean, v[0], v[1], angle=180.0 + angle, color=color) #type:ignore
-        ell.set_clip_box(ax.bbox)
-        ell.set_alpha(0.1)
-        ax.add_artist(ell)
+#         angle = np.arctan(u[1] / u[0])
+#         angle = 180.0 * angle / np.pi  # convert to degrees
+#         ell = mpl.patches.Ellipse(mean, v[0], v[1], angle=180.0 + angle, color=color) #type:ignore
+#         ell.set_clip_box(ax.bbox)
+#         ell.set_alpha(0.1)
+#         ax.add_artist(ell)
 
-def plot_mean_estimation(mean, std, ax):
-    ax.plot(mean[0], 0, "o", color="red", markersize=5)
-    ax.plot([mean[0] + 3 *std[0][0], mean[0] - 3*std[0][0]],[0,0], color="b", linewidth=5, alpha=0.5)
+# def plot_mean_estimation(mean, std, ax):
+#     ax.plot(mean[0], 0, "o", color="red", markersize=5)
+#     ax.plot([mean[0] + 3 *std[0][0], mean[0] - 3*std[0][0]],[0,0], color="b", linewidth=5, alpha=0.5)
 
 
 
@@ -61,6 +64,8 @@ for i in tqdm(range(10, met_data.shape[0])):
     ax.plot(ppe.phase_plane[:, 0], ppe.phase_plane[:, 1], label="phase plane") #type:ignore
     plot_elipses(ppe.gmm.means_, ppe.gmm.covariances_, ax) #type:ignore
     plot_mean_estimation(mean, std, ax)
+    plt.xlabel("Metabolic cost (W)")
+    plt.ylabel("d(Metabolic cost) (W)")
     canvas = FigureCanvas(fig)
     canvas.draw()       # draw the canvas, cache the renderer
 
