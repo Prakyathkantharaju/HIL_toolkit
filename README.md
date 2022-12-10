@@ -6,6 +6,24 @@ Toolkit for human in the loop optimization
 > The code is not fully tested. If you find any bugs please report them in discussion section or create an issue.
 
 
+## Table of contents
+- [HIL\_toolkit\_temp](#hil_toolkit_temp)
+  - [Table of contents](#table-of-contents)
+  - [Requirements for the toolkit](#requirements-for-the-toolkit)
+    - [General requirements](#general-requirements)
+    - [Metabolic cost.](#metabolic-cost)
+    - [ECG](#ecg)
+    - [Foot pressure.](#foot-pressure)
+  - [Installation](#installation)
+  - [Testing the installtion.](#testing-the-installtion)
+  - [Device setups](#device-setups)
+    - [ECG device setup](#ecg-device-setup)
+  - [Estimation](#estimation)
+  - [Metabolic cost estimation.](#metabolic-cost-estimation)
+    - [Estimation in scripts for offline.](#estimation-in-scripts-for-offline)
+    - [Estimation in notebooks.](#estimation-in-notebooks)
+
+
 ## Requirements for the toolkit
 
 ### General requirements
