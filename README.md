@@ -1,13 +1,14 @@
-# HIL_toolkit_temp
+# HIL Toolkit: Acquisition, estimation and optimization of human in the loop experiments
 Toolkit for human in the loop optimization
 
 > **Note**
 > This is a part of an upcoming publication. Please use with caution.
 > The code is not fully tested. If you find any bugs please report them in discussion section or create an issue.
 
+![](figures\Toolkit_overview.png)
 
 ## Table of contents
-- [HIL\_toolkit\_temp](#hil_toolkit_temp)
+- [HIL Toolkit: Acquisition, estimation and optimization of human in the loop experiments](#hil-toolkit-acquisition-estimation-and-optimization-of-human-in-the-loop-experiments)
   - [Table of contents](#table-of-contents)
   - [Requirements for the toolkit](#requirements-for-the-toolkit)
     - [General requirements](#general-requirements)
