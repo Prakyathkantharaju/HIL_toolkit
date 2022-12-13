@@ -42,7 +42,7 @@ class MetInlet(Inlet):
 
 # Only estimation class
 class PPE(object):
-    def __init__(self, upsample_number: int = 20, cutoff: float = 0.01, GMM_filter:bool = True) -> None:
+    def __init__(self, upsample_number: int = 20, cutoff: float = 0.02, GMM_filter:bool = True) -> None:
         self.UPSAMPLE = upsample_number
         self.HIGHCUT = cutoff
         self.MAX_ITER = 1000
@@ -142,7 +142,8 @@ class PPE(object):
             u = w[0] / linalg.norm(w[0]) #type:ignore
             angle = np.arctan(u[1] / u[0])
             angle = 180.0 * angle / np.pi  # convert to degrees
-            if angle < 0:
+            # to avoid negative values
+            if angle < -45:
                 continue
             else:
                 filtered_means.append(mean)

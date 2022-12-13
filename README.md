@@ -28,7 +28,8 @@ Toolkit for human in the loop optimization
 
 ### General requirements
 - Python 3.10 or higher.
-- Labstreaminglayer - install here. 
+- Labstreaminglayer - install [here](https://github.com/sccn/liblsl/releases). 
+- pylsl - install by running `pip install pylsl`.
 
 ### Metabolic cost.
 - Cosmed or other metabolic cart device.
@@ -43,16 +44,13 @@ Toolkit for human in the loop optimization
 
 
 ## Installation
-Complete python HIL toolkit install
+Complete python HIL toolkit install using pip in main directory.
 ```bash
 pip install -e .
 ```
 
 ## Testing the installtion.
-This will test the all the files are setup for simple installtion. **Does not test the ECG, or metabolic cost acquisition**
-```bash
-pytest .
-```
+>#TODO
 
 ## Device setups
 ### ECG device setup
@@ -64,7 +62,7 @@ For setting up the new polar H10 ( ECG sensor )
 
 ## Estimation
 
-> **warning**
+> **Warning**
 > The estimation is not fully tested. Please use with caution.
 
 ## Metabolic cost estimation.
