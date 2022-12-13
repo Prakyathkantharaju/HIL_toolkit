@@ -67,6 +67,10 @@ For setting up the new polar H10 ( ECG sensor )
 
 ## Metabolic cost estimation.
 
+Please refer the following paper for the details of the estimation. 
+> **Reference**
+> 
+> Kantharaju, Prakyath, and Myunghee Kim. "Phase-Plane Based Model-Free Estimation of Steady-State Metabolic Cost." IEEE Access 10 (2022): 97642-97650.
 ### Estimation in scripts for offline.
 - Run the following script to estimate the metabolic cost. `python scripts/estimate_metabolic_cost.py`
 - This script will estimate the estimate the metabolic cost data in the provided in the `data/met_data.npy`.
