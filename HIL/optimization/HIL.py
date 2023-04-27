@@ -103,7 +103,7 @@ class HIL:
 
                 self._get_cost()
                 if (self.cost_time - self.start_time) > self.args['Cost']['time'] and len(self.store_cost_data) > 5: # 30 for 120
-                    print(f" cost is {np.mean(self.store_cost_data[-5:])}")
+                    print(f" cost is {np.nanmean(self.store_cost_data[-5:])}")
                     out = input("Press Y to record the data: N to remove it:")
                     if out == 'N':
                         self._reset_data_collection()
@@ -115,7 +115,7 @@ class HIL:
                             self.x_opt = np.array([self.x[self.n]])
                         else:
                             self.x_opt = np.concatenate((self.x_opt, np.array([self.x[self.n]])))
-                        mean_cost = np.mean(self.store_cost_data[-5:])
+                        mean_cost = np.nanmean(self.store_cost_data[-5:])
                         
                         if len(self.y_opt) < 1:
                             self.y_opt =  np.array([mean_cost])
@@ -130,7 +130,7 @@ class HIL:
 
             # Exploration is done and starting the optimization
             elif self.n == self.args['Optimization']['n_exploration'] and not self.OPTIMIZATION:
-                print(f" cost is {np.mean(self.store_cost_data[-5:])}")
+                print(f" cost is {np.nanmean(self.store_cost_data[-5:])}")
                 out = input("Press Y to record the data: N to remove it:")
                 if out == 'N':
                     self._reset_data_collection()
@@ -139,6 +139,7 @@ class HIL:
                     print("################################")
                 else:
                     print(f"starting the optimization.")
+                    print(f"recording cost function {self.y_opt}, for the parameter {self.x_opt}")
                     new_parameter = self.BO.run(self.x_opt.reshape(self.n, -1), self.y_opt.reshape(self.n, -1))
                     print(f"Next parameter is {new_parameter}")
                     self.outlet.push_sample([self.x_opt[-1],self.y_opt[-1]])
@@ -159,7 +160,7 @@ class HIL:
                         print("################################")
                     else:
                         self.x_opt = np.concatenate((self.x_opt, np.array([self.x[self.n]])))
-                        mean_cost = np.mean(self.store_cost_data[-5:])
+                        mean_cost = np.nanmean(self.store_cost_data[-5:])
                         self.y_opt = np.concatenate((self.y_opt, np.array([mean_cost])))
                         self.n += 1
                         print(f"recording cost function {self.y_opt[-1]}, for the parameter {self.x_opt[-1]}")

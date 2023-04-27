@@ -13,7 +13,7 @@ from HIL.optimization.HIL import HIL
 
 def run():
 
-    args = yaml.safe_load(open('configs/config.yml','r'))
+    args = yaml.safe_load(open('configs/ECG_config.yml','r'))
     hil = HIL(args)
     hil.start()
 
