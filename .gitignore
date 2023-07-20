@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+Device_compatibability.md
+Device_compatibability.html
+Device_compatibability.pdf

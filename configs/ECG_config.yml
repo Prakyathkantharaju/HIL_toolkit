@@ -18,3 +18,6 @@ Optimization:
   kernel_function: 'se'
   GP: "Regular"
 
+Exoskeleton: 
+  port: 5555
+  ip: "localhost"
