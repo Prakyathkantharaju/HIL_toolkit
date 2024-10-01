@@ -2,8 +2,7 @@
 Toolkit for human in the loop optimization
 
 > **Note**
-> This is a part of an upcoming publication. Please use with caution.
-> The code is not fully tested. If you find any bugs please report them in discussion section or create an issue.
+> For the most updated version of the code please visit [https://github.com/HIL-Framework/HIL-toolkit/tree/dev-release](https://github.com/HIL-Framework/HIL-toolkit/tree/dev-release)
 
 ![Toolkit_overview](https://user-images.githubusercontent.com/34353557/207312898-9ce55dfa-1366-408c-98c1-ab69f434e131.jpg)
 
